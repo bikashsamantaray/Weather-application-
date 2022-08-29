@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity() {
     private fun showRationalDialogForPermissions() {
         AlertDialog.Builder(this)
             .setMessage("It Looks like you have turned off permissions required for this feature." +
-                    " It can be enabled under Application Settings").setPositiveButton("Go to Settings")
+                    " It can be enabled under Application Settings only").setPositiveButton("Go to Settings")
             { _, _ ->
                 try {
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
