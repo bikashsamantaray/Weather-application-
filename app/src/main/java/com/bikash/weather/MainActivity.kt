@@ -77,7 +77,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-<<<<<<< HEAD
     private fun getLocationWeatherDetails(latitude: Double, longitude: Double){
         if (Constants.isNetworkAvailable(this)){
             val retrofit : Retrofit = Retrofit.Builder().baseUrl(Constants.BASE_URL).addConverterFactory(GsonConverterFactory.create()).build()
@@ -117,11 +116,6 @@ class MainActivity : AppCompatActivity() {
                 }
 
             })
-=======
-    private fun getLocationWeatherDetails(){
-        if (Constants.isNetworkAvailable(this)){
-            Toast.makeText(this@MainActivity,"You connected to internet",Toast.LENGTH_SHORT).show()
->>>>>>> a72a38a83d85c7d3fc45ff9e1a72700bf1628121
         }else{
             Toast.makeText(this@MainActivity,"You are not connected to internet",Toast.LENGTH_SHORT).show()
         }
@@ -165,15 +159,11 @@ class MainActivity : AppCompatActivity() {
             Log.i("current latitude", "$latitude")
             val longitude = mLastLocation?.longitude
             Log.i("current latitude", "$longitude")
-<<<<<<< HEAD
             if (latitude != null) {
                 if (longitude != null) {
                     getLocationWeatherDetails(latitude, longitude)
                 }
             }
-=======
-            getLocationWeatherDetails()
->>>>>>> a72a38a83d85c7d3fc45ff9e1a72700bf1628121
 
 
         }
