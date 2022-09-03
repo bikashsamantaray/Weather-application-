@@ -202,6 +202,7 @@ class MainActivity : AppCompatActivity() {
             //tv_main.text = weatherList.weather[i].main
             //tv_main_description.text = weatherList.weather[i].description
             //tv_temp.text = weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
+
         }
     }
 
@@ -213,4 +214,7 @@ class MainActivity : AppCompatActivity() {
         return value
     }
 
+    private fun unixTime(timex: Long): String{
+
+    }
 }
