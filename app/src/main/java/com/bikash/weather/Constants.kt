@@ -8,7 +8,7 @@ import android.os.Build
 object Constants {
 
     const val APP_ID: String = "c1079f54d2243415ffa47074db4a47b1"
-    const val BASE_URL: String = "https://home.openweathermap.org"
+    const val BASE_URL: String = "https://api.openweathermap.org/data/"
     const val METRIC_UNIT: String = "metric"
 
     fun isNetworkAvailable(context: Context): Boolean{

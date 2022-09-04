@@ -16,6 +16,7 @@ import android.os.Bundle
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
@@ -38,12 +39,19 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : AppCompatActivity() {
 
+    private var tvMain: TextView? = null
+    private var tvTemp: TextView? = null
+    private var tvMainDescription: TextView? = null
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
     private var mProgressDialog: Dialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        tvMain = findViewById(R.id.tv_main)
+        tvTemp = findViewById(R.id.tv_temp)
+        tvMainDescription = findViewById(R.id.tv_main_description)
+
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
@@ -83,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         if (Constants.isNetworkAvailable(this)){
             val retrofit : Retrofit = Retrofit.Builder().baseUrl(Constants.BASE_URL).addConverterFactory(GsonConverterFactory.create()).build()
 
-            val service: WeatherService = retrofit.create<WeatherService>(WeatherService::class.java)
+            val service: WeatherService = retrofit.create(WeatherService::class.java)
 
             val listCall: Call<WeatherResponse> = service.getWeather(
                 latitude,longitude, Constants.METRIC_UNIT, Constants.APP_ID
@@ -92,6 +100,7 @@ class MainActivity : AppCompatActivity() {
             showCustomProgressDialog()
 
             listCall.enqueue(object : Callback<WeatherResponse>{
+                @RequiresApi(Build.VERSION_CODES.N)
                 override fun onResponse(
                     call: Call<WeatherResponse>,
                     response: Response<WeatherResponse>
@@ -196,17 +205,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
+    @RequiresApi(Build.VERSION_CODES.N)
     private fun setupUI(weatherList: WeatherResponse){
         for( i in weatherList.weather.indices){
             Log.i("Weather name", weatherList.weather.toString())
-            //tv_main.text = weatherList.weather[i].main
-            //tv_main_description.text = weatherList.weather[i].description
-            //tv_temp.text = weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
-
+            tvMain?.text = weatherList.weather[i].main
+            tvMainDescription?.text = weatherList.weather[i].description
         }
+        tvTemp?.text = weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
     }
 
-    private fun getUnit(value: String):String?{
+    private fun getUnit(value: String):String{
         var value = "°C"
         if("US" == value || "LR" == value || "MM" == value){
             value = "°F"
@@ -214,7 +224,5 @@ class MainActivity : AppCompatActivity() {
         return value
     }
 
-    private fun unixTime(timex: Long): String{
 
-    }
 }
