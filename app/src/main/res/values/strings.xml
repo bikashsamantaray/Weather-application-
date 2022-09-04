@@ -2,5 +2,6 @@
     <string name="app_name">Weather</string>
 
     <string name="image_contentDescription">image</string>
-    <string name="miles_per_hour">miles/hour</string>
+    <string name="miles_per_hour">km/hour</string>
+    <string name="refresh">Refresh</string>
 </resources>

@@ -6,6 +6,7 @@ import android.app.Dialog
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.location.Location
 import android.location.LocationManager
 import android.location.LocationRequest
@@ -16,6 +17,9 @@ import android.os.Bundle
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -29,6 +33,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.gson.Gson
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
@@ -36,24 +41,51 @@ import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import retrofit2.*
 import retrofit2.converter.gson.GsonConverterFactory
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
 
     private var tvMain: TextView? = null
     private var tvTemp: TextView? = null
     private var tvMainDescription: TextView? = null
+    private var tvSunRiseTime: TextView? = null
+    private var tvSunSetTime: TextView? = null
+    private var tvHumidity: TextView? = null
+    private var minTemp: TextView? = null
+    private var maxTemp: TextView? = null
+    private var tvSpeed: TextView? = null
+    private var tvName: TextView? = null
+    private var tvCountry: TextView? = null
+    private var ivMain: ImageView? = null
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
     private var mProgressDialog: Dialog? = null
+    private lateinit var mSharedPreferences: SharedPreferences
 
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         tvMain = findViewById(R.id.tv_main)
         tvTemp = findViewById(R.id.tv_temp)
         tvMainDescription = findViewById(R.id.tv_main_description)
+        tvSunRiseTime = findViewById(R.id.tv_sunrise_time)
+        tvSunSetTime = findViewById(R.id.tv_sunset_time)
+        tvHumidity = findViewById(R.id.tv_humidity)
+        minTemp = findViewById(R.id.tv_min)
+        maxTemp = findViewById(R.id.tv_max)
+        tvSpeed = findViewById(R.id.tv_speed)
+        tvName = findViewById(R.id.tv_name)
+        tvCountry = findViewById(R.id.tv_country)
+        ivMain = findViewById(R.id.iv_main)
 
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        mSharedPreferences = getSharedPreferences(Constants.PREFERENCE_NAME,Context.MODE_PRIVATE)
+
+        //this setupui is for preferred reference basically it stores for previous data
+        setupUI()
 
         if (!isLocationEnabled()){
             Toast.makeText(this,"Your location provider is turned off. Please turn on the gps",Toast.LENGTH_SHORT).show()
@@ -97,6 +129,7 @@ class MainActivity : AppCompatActivity() {
                 latitude,longitude, Constants.METRIC_UNIT, Constants.APP_ID
             )
 
+
             showCustomProgressDialog()
 
             listCall.enqueue(object : Callback<WeatherResponse>{
@@ -108,7 +141,15 @@ class MainActivity : AppCompatActivity() {
                     if (response.isSuccessful){
                         hideProgressDialog()
                         val weatherList: WeatherResponse = response.body()!!
-                        setupUI(weatherList)
+                        //start
+                        //from start to end this uses shared preferences for data storing of previous api call
+                        val weatherResponseJsonString = Gson().toJson(weatherList)
+                        val editor = mSharedPreferences.edit()
+                        editor.putString(Constants.WEATHER_RESPONSE_DATA, weatherResponseJsonString )
+                        editor.apply()
+                        //end
+                        //if we don't use shared preferences then we can use weatherList in setupui
+                        setupUI()
                         Log.i("Response Result", "$weatherList")
                     }else{
                         hideProgressDialog()
@@ -180,8 +221,11 @@ class MainActivity : AppCompatActivity() {
             if (latitude != null) {
                 if (longitude != null) {
                     getLocationWeatherDetails(latitude, longitude)
+
                 }
             }
+            //this is also required to refresh the page
+            mFusedLocationClient.removeLocationUpdates(this)
 
 
         }
@@ -205,15 +249,76 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+
+            R.id.action_refresh -> {
+                requestLocationData()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+
+        }
+    }
+
     @SuppressLint("SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.N)
-    private fun setupUI(weatherList: WeatherResponse){
-        for( i in weatherList.weather.indices){
-            Log.i("Weather name", weatherList.weather.toString())
-            tvMain?.text = weatherList.weather[i].main
-            tvMainDescription?.text = weatherList.weather[i].description
+
+    //if we dont use shared preferences then we can use weatherList: WeatherResponse in setupui call
+    private fun setupUI(){
+        val weatherResponseJsonString = mSharedPreferences.getString(Constants.WEATHER_RESPONSE_DATA,"")
+        if (!weatherResponseJsonString.isNullOrEmpty()){
+            val weatherList = Gson().fromJson(weatherResponseJsonString,WeatherResponse::class.java)
+
+            for( i in weatherList.weather.indices){
+                Log.i("Weather name", weatherList.weather.toString())
+                tvMain?.text = weatherList.weather[i].main
+                tvMainDescription?.text = weatherList.weather[i].description
+                when(weatherList.weather[i].icon){
+                    "01d" -> ivMain?.setImageResource(R.drawable.sunny)
+                    "02d" -> ivMain?.setImageResource(R.drawable.cloud)
+                    "03d" -> ivMain?.setImageResource(R.drawable.cloud)
+                    "04d" -> ivMain?.setImageResource(R.drawable.cloud)
+                    "04n" -> ivMain?.setImageResource(R.drawable.cloud)
+                    "10d" -> ivMain?.setImageResource(R.drawable.rain)
+                    "11d" -> ivMain?.setImageResource(R.drawable.storm)
+                    "13d" -> ivMain?.setImageResource(R.drawable.snowflake)
+                    "01n" -> ivMain?.setImageResource(R.drawable.cloud)
+                    "02n" -> ivMain?.setImageResource(R.drawable.cloud)
+                    "03n" -> ivMain?.setImageResource(R.drawable.cloud)
+                    "10n" -> ivMain?.setImageResource(R.drawable.cloud)
+                    "11n" -> ivMain?.setImageResource(R.drawable.rain)
+                    "13n" -> ivMain?.setImageResource(R.drawable.snowflake)
+                }
+            }
+            tvTemp?.text = weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
+            tvSunRiseTime?.text = unixTime(weatherList.sys.sunrise)
+            tvSunSetTime?.text = unixTime(weatherList.sys.sunset)
+            tvHumidity?.text = weatherList.main.humidity.toString() + "%"
+            minTemp?.text = weatherList.main.temp_min.toString() + " min"
+            maxTemp?.text = weatherList.main.feels_like.toString() + " max"
+            val weatherInKMPH = (weatherList.wind.speed * 1.609).toFloat()
+            tvSpeed?.text = weatherInKMPH.toString()
+            tvName?.text = weatherList.name
+            if (weatherList.sys.country == "IN"){
+                tvCountry?.text = "INDIA"
+            }
+
         }
-        tvTemp?.text = weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
+
+
+
+
+
+
+
     }
 
     private fun getUnit(value: String):String{
@@ -222,6 +327,15 @@ class MainActivity : AppCompatActivity() {
             value = "°F"
         }
         return value
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    private fun unixTime(timex: Long):String{
+        val date = Date(timex*1000)
+        val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        sdf.timeZone = TimeZone.getDefault()
+        return sdf.format(date)
+
     }
 
 
